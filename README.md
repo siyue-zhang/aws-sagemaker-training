@@ -59,4 +59,4 @@ estimator = Estimator(image_name="custom-training-container",
 
 estimator.fit()
 ```
-To train a model using the image on SageMaker, push the image to ECR and start a SageMaker training job with the image URI.
+To train a model using the image on SageMaker, [push the image to ECR](https://docs.aws.amazon.com/AmazonECR/latest/userguide/docker-push-ecr-image.html) and start a SageMaker training job with the image URI.
