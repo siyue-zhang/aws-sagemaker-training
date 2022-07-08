@@ -1,0 +1,8 @@
+name: smart-bin
+channels:
+  - defaults
+dependencies:
+  - python=3.8.10
+  - cudnn=8.1.0
+  - cudatoolkit=11.2
+prefix: D:\Anaconda\envs\smart-bin
