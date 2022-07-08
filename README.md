@@ -64,4 +64,5 @@ To train a model using the image on SageMaker, [push the image to ECR](https://d
 
 ## Docker
 
-[](./docker.PNG)
+![image](./docker.PNG)
+
