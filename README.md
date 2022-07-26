@@ -140,3 +140,5 @@ wget https://raw.githubusercontent.com/aws-samples/amazon-sagemaker-notebook-ins
 echo "Starting the SageMaker autostop script in cron"
 (crontab -l 2>/dev/null; echo "*/1 * * * * /usr/bin/python $PWD/autostop.py --time $IDLE_TIME --ignore-connections") | crontab -
  ```
+
+We can create a trigger by clicking on the **Add trigger button**, which supports various options such as receiving certain events, scheduling based on time etc. It leverages different aws services such as EventBridge, Kinesis etc to do this. The one I used is S3 — where we can define different events such as **creating an object in a given s3 bucket, deleting an object etc**. We can also give prefixes and suffixes so we don’t need a dedicated s3 bucket for the triggers.
