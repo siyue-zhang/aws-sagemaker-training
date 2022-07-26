@@ -66,3 +66,77 @@ To train a model using the image on SageMaker, [push the image to ECR](https://d
 
 ![image](./docker.PNG)
 
+
+## Custom Python Environment Through Lifecycle Configurations
+
+**Lifecycle Configurations** runs the script before the sagemaker notebook is initialized. This script can be used to establish the custom conda environment. 
+
+```bash
+#!/bin/bash
+
+set -e
+
+# OVERVIEW
+# This script installs a custom, persistent installation of conda on the Notebook Instance's EBS volume, and ensures
+# that these custom environments are available as kernels in Jupyter.
+# 
+# The on-create script downloads and installs a custom conda installation to the EBS volume via Miniconda. Any relevant
+# packages can be installed here.
+#   1. ipykernel is installed to ensure that the custom environment can be used as a Jupyter kernel   
+#   2. Ensure the Notebook Instance has internet connectivity to download the Miniconda installer
+
+sudo -u ec2-user -i <<'EOF'
+
+unset SUDO_UID
+
+# Install a separate conda installation via Miniconda
+WORKING_DIR=/home/ec2-user/SageMaker/custom-miniconda
+mkdir -p "$WORKING_DIR"
+
+wget https://repo.anaconda.com/miniconda/Miniconda3-4.6.14-Linux-x86_64.sh -O "$WORKING_DIR/miniconda.sh"
+bash "$WORKING_DIR/miniconda.sh" -b -u -p "$WORKING_DIR/miniconda" 
+rm -rf "$WORKING_DIR/miniconda.sh"
+
+# Create a custom conda environment
+source "$WORKING_DIR/miniconda/bin/activate"
+KERNEL_NAME="py38_cuda"
+PYTHON="3.8.10"
+conda create --yes --name "$KERNEL_NAME" -c conda-forge cudatoolkit cudnn python="$PYTHON"
+conda activate "$KERNEL_NAME"
+pip install --quiet ipykernel
+
+# Customize these lines as necessary to install the required packages
+conda install --yes numpy
+pip install --quiet boto3
+
+EOF
+
+```
+
+## Automate SageMaker Notebooks Through Lambda and Lifecycle Configurations
+
+This script can also be used to auto run the notebook instance. The default time limit for lifecycle configuration script is 5 minutes. To overcome this limit for notebook training, nohup function is used.
+
+ It assumes that the notebook called schedule_script.ipynb is in the home location, and that gets triggered. Change the variable NOTEBOOK_FILE to point to your notebook. The /home/ec2-user/SageMaker part should ideally be common in the path.
+ 
+Reference: https://medium.com/analytics-vidhya/a-guide-to-schedule-sagemaker-notebooks-a7a09eb641f6
+ 
+ ```bash
+ set -e
+ENVIRONMENT=python3
+NOTEBOOK_FILE="/home/ec2-user/SageMaker/schedule_script.ipynb"
+AUTO_STOP_FILE="/home/ec2-user/SageMaker/auto-stop.py"
+ 
+echo "Activating conda env"
+source /home/ec2-user/anaconda3/bin/activate "$ENVIRONMENT"
+echo "Starting notebook"
+nohup jupyter nbconvert  --to notebook --inplace --ExecutePreprocessor.timeout=600 --ExecutePreprocessor.kernel_name=python3 --execute "$NOTEBOOK_FILE" &
+echo "Decativating conda env"
+source /home/ec2-user/anaconda3/bin/deactivate
+# PARAMETERS
+IDLE_TIME=600 # 10minute
+echo "Fetching the autostop script"
+wget https://raw.githubusercontent.com/aws-samples/amazon-sagemaker-notebook-instance-lifecycle-config-samples/master/scripts/auto-stop-idle/autostop.py
+echo "Starting the SageMaker autostop script in cron"
+(crontab -l 2>/dev/null; echo "*/1 * * * * /usr/bin/python $PWD/autostop.py --time $IDLE_TIME --ignore-connections") | crontab -
+ ```
