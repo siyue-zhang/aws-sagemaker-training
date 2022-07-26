@@ -67,7 +67,7 @@ To train a model using the image on SageMaker, [push the image to ECR](https://d
 ![image](./docker.PNG)
 
 
-## Custom Python Environment Through Lifecycle Configurations
+## Custom Sagemaker Python Environment Through Lifecycle Configurations
 
 **Lifecycle Configurations** runs the script before the sagemaker notebook is initialized. This script can be used to establish the custom conda environment. 
 
